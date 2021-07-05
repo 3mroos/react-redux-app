@@ -21,9 +21,11 @@ function AddNewArticle(props) {
         title: props.articleToEdit ? props.articleToEdit.title : '',
         content: props.articleToEdit ? props.articleToEdit.content : '',
         date: props.articleToEdit ? props.articleToEdit.date : '',
-        image: props.articleToEdit ? props.articleToEdit.image : ''
+        image: props.articleToEdit ? props.articleToEdit.image : '',
+        imagePreview: props.articleToEdit ? props.articleToEdit.image : '',
     });
-    let handleChange = async e => {
+    let handleChange = e => {
+        // text editor case
         if (!e.target) {
             setState(prevState => ({
                 ...prevState,
@@ -41,6 +43,22 @@ function AddNewArticle(props) {
         }));
     };
 
+    let getBase64 = () => {
+        var file = document.querySelector('#imageFile').files[0];
+        var reader = new FileReader();
+        reader.readAsDataURL(file);
+        reader.onload = function () {
+            document.querySelector('#imageFile').setAttribute('base64', reader.result);
+            setState(prevState => ({
+                ...prevState,
+                imagePreview: reader.result
+            }))
+        };
+        reader.onerror = function (error) {
+            console.log('Error: ', error);
+        };
+    }
+
     return (
         <form className="form" id="form_article">
             <input type="text" placeholder="Title" name="title" value={state.title} onChange={handleChange}></input>
@@ -49,7 +67,12 @@ function AddNewArticle(props) {
             </div>
 
             <input type="date" name="date" value={state.date} onChange={handleChange}></input>
-            <input type="file" placeholder="image" name="image" onChange={handleChange} id="imageFile" accept="image/png, image/gif, image/jpeg"></input>
+
+            <div className="flex mb-10">
+                <input type="file" className="h-100" placeholder="image" name="image" onChange={handleChange} id="imageFile" accept="image/png, image/gif, image/jpeg"></input>
+                <img src={state.imagePreview} id="preview" alt="" className="h-100" />
+            </div>
+
             <button type="button" className="btn btn-success" onClick={() => props.addArticle(state, props, history)}>{props.articleToEdit ? 'Edit Article' : 'Add New Article'}</button>
             {
                 props.articleToEdit ? (
@@ -68,10 +91,10 @@ const mapStateToProps = (state) => {
 const mapDispatchToProps = (dispatch) => {
     return {
         addArticle: (state, props, history) => {
-            if (!validate('form_article')) {
+            if (!validate('form_article', state)) {
                 return;
             }
-            let image = document.querySelector('#imageFile').attributes.base64.nodeValue;
+            let image = state.imagePreview || document.querySelector('#imageFile').attributes.base64.nodeValue;
             if (!validateImageSizeAndType(image)) {
                 return false;
             }
@@ -96,14 +119,21 @@ const mapDispatchToProps = (dispatch) => {
     }
 }
 // TODO: validate more for email patterens and re-password and special charachters
-const validate = (formId) => {
+const validate = (formId, state) => {
     var elements = document.getElementById(formId).elements;
 
     for (var i = 0, element; element = elements[i++];) {
-        if ((element.type === "text" || element.type === "email" || element.type === "password" || element.type === "file" || element.type === "date") && element.value === "") {
+        if ((element.type === "text" || element.type === "email" || element.type === "password" || element.type === "date") && element.value === "") {
             element.classList.add('error');
         } else {
             element.classList.remove('error');
+        }
+        if (element.type === 'file') {
+            if (!state.imagePreview && !element.value) {
+                element.classList.add('error');
+            } else {
+                element.classList.remove('error');
+            }
         }
     }
     if (!document.querySelector("#editor").querySelector('textarea').value) {
@@ -117,17 +147,7 @@ const validate = (formId) => {
     }
     return true;
 }
-function getBase64() {
-    var file = document.querySelector('#imageFile').files[0];
-    var reader = new FileReader();
-    reader.readAsDataURL(file);
-    reader.onload = function () {
-        document.querySelector('#imageFile').setAttribute('base64', reader.result)
-    };
-    reader.onerror = function (error) {
-        console.log('Error: ', error);
-    };
-}
+
 function validateImageSizeAndType(base64) {
     let imageType = base64.split(';')[0].split('/')[1];
     if (imageType !== 'jpeg' && imageType !== 'png' && imageType !== 'gif' && imageType !== 'jpg') {

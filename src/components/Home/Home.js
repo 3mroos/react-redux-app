@@ -33,7 +33,7 @@ function Home(props) {
                             <img src="edit_icon.png" className="icon editIcon" title="Edit Article" alt="" onClick={() => props.editArticle(index, setVisibility)}></img>
                             <img className="article_img" src={e.image} alt="" />
                             <div className="card_text">
-                                <div className="flex">
+                                <div className="flex align-center ">
                                     <h2>{e.title}</h2>
                                     <small className="margin-auto">{e.date}</small>
                                 </div>
